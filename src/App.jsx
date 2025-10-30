@@ -4,11 +4,22 @@ import "./App.css";
 import { db } from "./firebaseConfig";
 import "./Board.css";
 
-import { collection, getDocs, updateDoc, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-
+import { collection, getDocs, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 
 
 const BOARD_SIZE = 8;
+
+function App() {
+  const [board, setBoard] = useState(initBoard());
+  const [selected, setSelected] = useState(null);
+  const [turn, setTurn] = useState("red");
+  const [mustContinue, setMustContinue] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [roomId, setRoomId] = useState("");
+  const [joinedRoom, setJoinedRoom] = useState(false);
+  const [playerColor, setPlayerColor] = useState(null);
 
   function initBoard() {
     const newBoard = Array(BOARD_SIZE)
@@ -31,18 +42,6 @@ const BOARD_SIZE = 8;
 
     return newBoard;
   }
-
-function App() {
-  const [board, setBoard] = useState(initBoard());
-  const [selected, setSelected] = useState(null);
-  const [turn, setTurn] = useState("red");
-  const [mustContinue, setMustContinue] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [roomId, setRoomId] = useState("");
-  const [joinedRoom, setJoinedRoom] = useState(false);
-  const [playerColor, setPlayerColor] = useState(null);
-
-
 
   // ======= FIREBASE =======
   async function createRoom() {

@@ -285,99 +285,113 @@ if (!userReady) {
       />
 
       <p>Elige tu foto de perfil:</p>
-<div className="avatar-options">
-  <button id="abrir-camara" className="avatar-btn">
-    📷 Usar Cámara
-  </button>
-  <label className="avatar-btn">
-    🖼️ Subir Imagen
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const url = URL.createObjectURL(file);
-          setAvatar(url);
-        }
-      }}
-      style={{ display: "none" }}
-    />
-  </label>
-  <button
-    className="avatar-btn"
-    onClick={() => {
-      const emojis = ["😊", "😎", "🤩", "😺", "👻", "🤖", "🦊", "🐵"];
-      const random = emojis[Math.floor(Math.random() * emojis.length)];
-      setAvatar(random);
-    }}
-  >
-    😊 Usar Emoji
-  </button>
-</div>
+      <div className="avatar-options">
+        <button
+          id="abrir-camara"
+          className="avatar-btn"
+          onClick={async () => {
+            const contenedor = document.getElementById("contenedor-camara");
+            const video = document.getElementById("video-camara");
+            contenedor.style.display = "flex";
 
-{/* 👇 Agregamos el contenedor de cámara aquí */}
-<div id="contenedor-camara" style={{ display: "none" }}>
-  <div className="camara-box">
-    <h3>📷 Captura tu imagen</h3>
-    <video id="video-camara" autoPlay playsInline></video>
-    <canvas id="canvas-camara"></canvas>
-    <div style={{ marginTop: "15px" }}>
-      <button
-        id="btn-capturar"
-        className="btn-camara"
-        onClick={() => {
-          const video = document.getElementById("video-camara");
-          const canvas = document.getElementById("canvas-camara");
-          const ctx = canvas.getContext("2d");
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageUrl = canvas.toDataURL("image/png");
-          setAvatar(imageUrl);
-          document.getElementById("contenedor-camara").style.display = "none";
-          video.srcObject.getTracks().forEach((track) => track.stop());
-        }}
-      >
-        📸 Capturar
-      </button>
-      <button
-        id="btn-cancelar-camara"
-        className="btn-camara"
-        onClick={() => {
-          const video = document.getElementById("video-camara");
-          document.getElementById("contenedor-camara").style.display = "none";
-          if (video.srcObject) video.srcObject.getTracks().forEach((t) => t.stop());
-        }}
-      >
-        ❌ Cancelar
-      </button>
-    </div>
-  </div>
-</div>
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              video.srcObject = stream;
+            } catch (err) {
+              alert("No se pudo acceder a la cámara.");
+              contenedor.style.display = "none";
+            }
+          }}
+        >
+          📷 Usar Cámara
+        </button>
 
+        <label className="avatar-btn">
+          🖼️ Subir Imagen
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                const url = URL.createObjectURL(file);
+                setAvatar(url);
+                if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
+              }
+            }}
+            style={{ display: "none" }}
+          />
+        </label>
 
+        <button
+          className="avatar-btn"
+          onClick={() => {
+            const emojis = ["😊", "😎", "🤩", "😺", "👻", "🤖", "🦊", "🐵"];
+            const random = emojis[Math.floor(Math.random() * emojis.length)];
+            setAvatar(random);
+            if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
+          }}
+        >
+          😊 Usar Emoji
+        </button>
+      </div>
 
-<div className="avatar-preview">
-  {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
-    <img src={avatar} alt="avatar" className="avatar-img" />
-  ) : (
-    <span className="avatar">{avatar}</span>
-  )}
-</div>
+      {/* Contenedor de cámara */}
+      <div id="contenedor-camara" style={{ display: "none" }}>
+        <div className="camara-box">
+          <h3>📷 Captura tu imagen</h3>
+          <video id="video-camara" autoPlay playsInline></video>
+          <canvas id="canvas-camara"></canvas>
+          <div style={{ marginTop: "15px" }}>
+            <button
+              id="btn-capturar"
+              className="btn-camara"
+              onClick={() => {
+                const video = document.getElementById("video-camara");
+                const canvas = document.getElementById("canvas-camara");
+                const ctx = canvas.getContext("2d");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageUrl = canvas.toDataURL("image/png");
+                setAvatar(imageUrl);
+                if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
+                document.getElementById("contenedor-camara").style.display = "none";
+                video.srcObject.getTracks().forEach((track) => track.stop());
+              }}
+            >
+              📸 Capturar
+            </button>
+            <button
+              id="btn-cancelar-camara"
+              className="btn-camara"
+              onClick={() => {
+                const video = document.getElementById("video-camara");
+                document.getElementById("contenedor-camara").style.display = "none";
+                if (video.srcObject) video.srcObject.getTracks().forEach((t) => t.stop());
+              }}
+            >
+              ❌ Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
 
-
-
-      <button
-        disabled={!playerName}
-        onClick={() => setUserReady(true)}
-        className="btn-start"
-      >
-        Continuar 💖
-      </button>
+      <div className="avatar-preview">
+        {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+          <img src={avatar} alt="avatar" className="avatar-img" />
+        ) : (
+          <span className="avatar">{avatar}</span>
+        )}
+      </div>
     </div>
   );
 }
+
+
+
+
+ 
 
 
 

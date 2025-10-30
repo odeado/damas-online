@@ -92,6 +92,6 @@
 /* 📱 Ajuste adicional para móviles pequeños */
 @media (max-width: 700px) {
   .board {
-    width: 95vw;
+    width: 94vw;
   }
 }

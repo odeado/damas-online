@@ -10,16 +10,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const BOARD_SIZE = 8;
 
-function App() {
-  const [board, setBoard] = useState(initBoard());
-  const [selected, setSelected] = useState(null);
-  const [turn, setTurn] = useState("red");
-  const [mustContinue, setMustContinue] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [roomId, setRoomId] = useState("");
-  const [joinedRoom, setJoinedRoom] = useState(false);
-  const [playerColor, setPlayerColor] = useState(null);
-
   function initBoard() {
     const newBoard = Array(BOARD_SIZE)
       .fill(null)
@@ -41,6 +31,18 @@ function App() {
 
     return newBoard;
   }
+
+function App() {
+  const [board, setBoard] = useState(initBoard());
+  const [selected, setSelected] = useState(null);
+  const [turn, setTurn] = useState("red");
+  const [mustContinue, setMustContinue] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [roomId, setRoomId] = useState("");
+  const [joinedRoom, setJoinedRoom] = useState(false);
+  const [playerColor, setPlayerColor] = useState(null);
+
+
 
   // ======= FIREBASE =======
   async function createRoom() {

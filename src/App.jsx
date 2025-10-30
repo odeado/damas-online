@@ -264,26 +264,10 @@ if (!userReady) {
       />
 
       <p>Elige tu foto de perfil:</p>
-      <div className="avatar-options">
-  {/* 📷 Cámara */}
-  <label className="avatar-btn">
+<div className="avatar-options">
+  <button className="avatar-btn" onClick={() => document.getElementById("contenedor-camara").style.display = "flex"}>
     📷 Usar Cámara
-    <input
-      type="file"
-      accept="image/*"
-      capture="user"
-      onChange={(e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const url = URL.createObjectURL(file);
-          setAvatar(url);
-        }
-      }}
-      style={{ display: "none" }}
-    />
-  </label>
-
-  {/* 🖼️ Subir desde galería */}
+  </button>
   <label className="avatar-btn">
     🖼️ Subir Imagen
     <input
@@ -299,12 +283,10 @@ if (!userReady) {
       style={{ display: "none" }}
     />
   </label>
-
-  {/* 😊 Elegir emoji */}
   <button
     className="avatar-btn"
     onClick={() => {
-      const emojis = ["😊", "😎", "🤩", "😺", "🐱", "👻", "🤖", "🦊", "🐵"];
+      const emojis = ["😊", "😎", "🤩", "😺", "👻", "🤖", "🦊", "🐵"];
       const random = emojis[Math.floor(Math.random() * emojis.length)];
       setAvatar(random);
     }}
@@ -312,6 +294,47 @@ if (!userReady) {
     😊 Usar Emoji
   </button>
 </div>
+
+{/* 👇 Agregamos el contenedor de cámara aquí */}
+<div id="contenedor-camara" style={{ display: "none" }}>
+  <div className="camara-box">
+    <h3>📷 Captura tu imagen</h3>
+    <video id="video-camara" autoPlay playsInline></video>
+    <canvas id="canvas-camara"></canvas>
+    <div style={{ marginTop: "15px" }}>
+      <button
+        id="btn-capturar"
+        className="btn-camara"
+        onClick={() => {
+          const video = document.getElementById("video-camara");
+          const canvas = document.getElementById("canvas-camara");
+          const ctx = canvas.getContext("2d");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageUrl = canvas.toDataURL("image/png");
+          setAvatar(imageUrl);
+          document.getElementById("contenedor-camara").style.display = "none";
+          video.srcObject.getTracks().forEach((track) => track.stop());
+        }}
+      >
+        📸 Capturar
+      </button>
+      <button
+        id="btn-cancelar-camara"
+        className="btn-camara"
+        onClick={() => {
+          const video = document.getElementById("video-camara");
+          document.getElementById("contenedor-camara").style.display = "none";
+          if (video.srcObject) video.srcObject.getTracks().forEach((t) => t.stop());
+        }}
+      >
+        ❌ Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
      <div className="avatar-preview">

@@ -212,6 +212,59 @@ h1 {
 }
 
 /* 🎮 Vista cara a cara (dos jugadores) */
+.versus-view {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 15px auto;
+  background: linear-gradient(135deg, #fff, #ffe6f2);
+  padding: 15px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.versus-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  border: 3px solid gold;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  font-size: 2.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.vs-center {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ff3399;
+  text-shadow: 0 0 10px rgba(255, 51, 153, 0.5);
+}
+
+.player-name {
+  font-weight: bold;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.player-color {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .versus-view.compact {
   background: #fdf1ff;
   border-radius: 16px;

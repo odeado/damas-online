@@ -265,14 +265,63 @@ if (!userReady) {
 
       <p>Elige tu foto de perfil:</p>
       <div className="avatar-options">
-        <button className="avatar-btn" onClick={() => setAvatar("📷")}>Usar Cámara</button>
-        <button className="avatar-btn" onClick={() => setAvatar("🖼️")}>Subir Imagen</button>
-        <button className="avatar-btn" onClick={() => setAvatar("😊")}>Usar Emoji</button>
-      </div>
+  {/* 📷 Cámara */}
+  <label className="avatar-btn">
+    📷 Usar Cámara
+    <input
+      type="file"
+      accept="image/*"
+      capture="user"
+      onChange={(e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setAvatar(url);
+        }
+      }}
+      style={{ display: "none" }}
+    />
+  </label>
 
-      <div className="avatar-preview">
-        <span className="avatar">{avatar}</span>
-      </div>
+  {/* 🖼️ Subir desde galería */}
+  <label className="avatar-btn">
+    🖼️ Subir Imagen
+    <input
+      type="file"
+      accept="image/*"
+      onChange={(e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const url = URL.createObjectURL(file);
+          setAvatar(url);
+        }
+      }}
+      style={{ display: "none" }}
+    />
+  </label>
+
+  {/* 😊 Elegir emoji */}
+  <button
+    className="avatar-btn"
+    onClick={() => {
+      const emojis = ["😊", "😎", "🤩", "😺", "🐱", "👻", "🤖", "🦊", "🐵"];
+      const random = emojis[Math.floor(Math.random() * emojis.length)];
+      setAvatar(random);
+    }}
+  >
+    😊 Usar Emoji
+  </button>
+</div>
+
+
+     <div className="avatar-preview">
+  {avatar.startsWith("blob:") ? (
+    <img src={avatar} alt="avatar" className="avatar-img" />
+  ) : (
+    <span className="avatar">{avatar}</span>
+  )}
+</div>
+
 
       <button
         disabled={!playerName}

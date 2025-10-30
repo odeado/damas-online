@@ -4,13 +4,9 @@ import "./App.css";
 import { db } from "./firebaseConfig";
 import "./Board.css";
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  onSnapshot,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, getDocs, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
 
 const BOARD_SIZE = 8;
 
@@ -65,27 +61,32 @@ function App() {
   alert(`🎮 Nueva partida creada. Esperando oponente...`);
 }
 
- // Unirse automáticamente a una sala libre
+ // Unirse automáticamente a la primera sala disponible
 async function joinRoom() {
-  const gamesSnap = await getDoc(doc(db, "games", "index"));
-  const allRooms = gamesSnap?.data()?.rooms || [];
+  // Traemos todas las partidas de la colección "games"
+  const querySnapshot = await getDocs(collection(db, "games"));
 
-  // Buscar una sala con player2 == false
-  for (const room of allRooms) {
-    const roomRef = doc(db, "games", room.id);
-    const snap = await getDoc(roomRef);
-    if (snap.exists() && !snap.data().player2) {
-      await updateDoc(roomRef, { player2: true });
-      setRoomId(room.id);
+  let found = false;
+
+  for (const gameDoc of querySnapshot.docs) {
+    const data = gameDoc.data();
+    // Ignoramos si ya tiene los dos jugadores o hay un ganador
+    if (data.player1 && !data.player2 && !data.winner) {
+      await updateDoc(doc(db, "games", gameDoc.id), { player2: true });
+      setRoomId(gameDoc.id);
       setPlayerColor("black");
       setJoinedRoom(true);
-      alert(`✅ Te uniste a la partida ${room.id}`);
-      return;
+      alert(`✅ Te uniste a la partida ${gameDoc.id}`);
+      found = true;
+      break;
     }
   }
 
-  alert("❌ No hay partidas disponibles. Crea una nueva.");
+  if (!found) {
+    alert("❌ No hay partidas disponibles. Crea una nueva.");
+  }
 }
+
 
   // Escucha en tiempo real los cambios
   useEffect(() => {

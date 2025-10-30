@@ -52,28 +52,40 @@ function App() {
     const roomRef = doc(db, "games", id);
 
     await setDoc(roomRef, {
-       board: JSON.stringify(initBoard()), // ✅ Convertimos a texto
-      turn: "red",
-      winner: null,
-    });
+    board: JSON.stringify(initBoard()),
+    turn: "red",
+    winner: null,
+    player1: true,
+    player2: false,
+  });
 
     setRoomId(id);
-    setPlayerColor("red");
-    setJoinedRoom(true);
-    alert(`🎮 Sala creada: ${id}`);
-  }
+  setPlayerColor("red");
+  setJoinedRoom(true);
+  alert(`🎮 Nueva partida creada. Esperando oponente...`);
+}
 
-  async function joinRoom() {
-    const roomRef = doc(db, "games", roomId);
+ // Unirse automáticamente a una sala libre
+async function joinRoom() {
+  const gamesSnap = await getDoc(doc(db, "games", "index"));
+  const allRooms = gamesSnap?.data()?.rooms || [];
+
+  // Buscar una sala con player2 == false
+  for (const room of allRooms) {
+    const roomRef = doc(db, "games", room.id);
     const snap = await getDoc(roomRef);
-    if (snap.exists()) {
-      setJoinedRoom(true);
+    if (snap.exists() && !snap.data().player2) {
+      await updateDoc(roomRef, { player2: true });
+      setRoomId(room.id);
       setPlayerColor("black");
-      alert(`✅ Te uniste a la sala ${roomId}`);
-    } else {
-      alert("❌ Sala no encontrada");
+      setJoinedRoom(true);
+      alert(`✅ Te uniste a la partida ${room.id}`);
+      return;
     }
   }
+
+  alert("❌ No hay partidas disponibles. Crea una nueva.");
+}
 
   // Escucha en tiempo real los cambios
   useEffect(() => {
@@ -220,40 +232,32 @@ function App() {
     <div className="flex flex-col items-center mt-4">
       <h1>Damas Online 👑</h1>
 
-      {!joinedRoom ? (
-        <div style={{ marginBottom: "20px" }}>
-          <button onClick={createRoom} className="btn">
-            Crear sala 🎲
-          </button>
-          <div style={{ marginTop: "10px" }}>
-            <input
-              type="text"
-              placeholder="Código de sala"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              style={{ padding: "5px", marginRight: "5px" }}
-            />
-            <button onClick={joinRoom} className="btn">
-              Unirse
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p>
-            Sala: <b>{roomId}</b> | Eres:{" "}
-            {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
-          </p>
-          {winner ? (
-            <h2 style={{ color: "green" }}>{winner}</h2>
-          ) : (
-            <p>
-              Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
-              {mustContinue ? "– sigue capturando!" : ""}
-            </p>
-          )}
-        </>
-      )}
+    {!joinedRoom ? (
+  <div className="menu">
+    <button onClick={createRoom} className="btn">
+      🎲 Nueva partida
+    </button>
+    <button onClick={joinRoom} className="btn">
+      🤝 Unirse a una partida
+    </button>
+  </div>
+) : (
+  <>
+    <p>
+      Sala: <b>{roomId}</b> | Eres:{" "}
+      {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
+    </p>
+    {winner ? (
+      <h2 style={{ color: "green" }}>{winner}</h2>
+    ) : (
+      <p>
+        Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
+        {mustContinue ? "– sigue capturando!" : ""}
+      </p>
+    )}
+  </>
+)}
+
 
      <div className="board">
   {board.map((row, rIndex) =>

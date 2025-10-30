@@ -85,64 +85,91 @@ useEffect(() => {
 
 
   // ======= FIREBASE =======
-  async function createRoom() {
-    const id = Math.random().toString(36).substring(2, 8);
-    const roomRef = doc(db, "games", id);
+ async function createRoom() {
+  const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const roomRef = doc(db, "games", id);
 
+  try {
     await setDoc(roomRef, {
-    board: JSON.stringify(initBoard()),
-    turn: "red",
-    winner: null,
-    player1: true,
-    player2: false,
-  });
-
-  await updateDoc(roomRef, {
-  player1Data: {
-    name: playerName,
-    avatar: avatar,
-  },
-});
-
+      board: JSON.stringify(initBoard()),
+      turn: "red",
+      winner: null,
+      player1: true,
+      player2: false,
+      player1Data: {
+        name: playerName || "Jugador Rojo",
+        avatar: avatar || "🔴",
+      },
+      player2Data: null,
+      createdAt: new Date()
+    });
 
     setRoomId(id);
-  setPlayerColor("red");
-  setJoinedRoom(true);
-  setWaitingForOpponent(true);
-  alert(`✅ Partida creada con ID: ${id}. Esperando oponente...`);
+    setPlayerColor("red");
+    setJoinedRoom(true);
+    setWaitingForOpponent(true);
+    setUserReady(true);
+    
+    // Mostrar el ID de manera más clara
+    alert(`✅ Partida creada!\n\nID: ${id}\n\nComparte este ID con tu amigo para que se una.`);
+    
+  } catch (error) {
+    console.error("Error al crear partida:", error);
+    alert("Error al crear partida");
+  }
 }
 
 
 async function joinRoom() {
-  const q = query(
-    collection(db, "games"),
-    where("player1", "==", true),
-    where("player2", "==", false),
-    where("winner", "==", null),
-    limit(1)
-  );
+  try {
+    console.log("Buscando partidas disponibles...");
+    
+    const q = query(
+      collection(db, "games"),
+      where("player2", "==", false),
+      where("winner", "==", null),
+      limit(1)
+    );
 
-  const unsubscribe = onSnapshot(q, async (snapshot) => {
-    if (!snapshot.empty) {
-      const gameDoc = snapshot.docs[0];
+    const querySnapshot = await getDocs(q);
+    console.log("Partidas encontradas:", querySnapshot.size);
+    
+    if (!querySnapshot.empty) {
+      const gameDoc = querySnapshot.docs[0];
       const gameId = gameDoc.id;
       const data = gameDoc.data();
+      
+      console.log("Partida encontrada:", gameId, data);
 
-      await updateDoc(doc(db, "games", gameId), {
-        player2: true,
-        player2Data: { name: playerName, avatar },
-      });
+      // Verificar que el jugador 1 ya esté listo
+      if (data.player1 && !data.player2) {
+        console.log("Uniéndose a la partida...");
+        
+        await updateDoc(doc(db, "games", gameId), {
+          player2: true,
+          player2Data: { 
+            name: playerName || "Jugador Negro", 
+            avatar: avatar || "⚫" 
+          },
+        });
 
-      setRoomId(gameId);
-      setPlayerColor("black");
-      setJoinedRoom(true);
-      setUserReady(true);
-      alert(`✅ Te uniste a la partida ${gameId}`);
-      unsubscribe(); // dejamos de escuchar una vez que entramos
-    } else {
-      console.log("Esperando partida disponible...");
+        setRoomId(gameId);
+        setPlayerColor("black");
+        setJoinedRoom(true);
+        setUserReady(true);
+        setWaitingForOpponent(false);
+        alert(`✅ Te uniste a la partida ${gameId}`);
+        return;
+      }
     }
-  });
+    
+    // Si no hay partidas disponibles
+    alert("❌ No hay partidas disponibles. Crea una nueva partida.");
+    
+  } catch (error) {
+    console.error("Error al unirse a la partida:", error);
+    alert("Error al unirse a la partida: " + error.message);
+  }
 }
 
 
@@ -153,178 +180,305 @@ useEffect(() => {
   const unsub = onSnapshot(doc(db, "games", roomId), (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
-      setBoard(JSON.parse(data.board));
-      setTurn(data.turn);
+      
+      // Actualizar estado del juego
+      setBoard(JSON.parse(data.board || "[]"));
+      setTurn(data.turn || "red");
       setWinner(data.winner);
 
-      // 🔥 Nuevo: detectar si ya entró el jugador 2
+      // 🔥 Detectar si ya entró el jugador 2
       if (playerColor === "red" && data.player2) {
         setWaitingForOpponent(false);
+        
+        // Actualizar datos del oponente
+        if (data.player2Data) {
+          setOpponentName(data.player2Data.name || "Jugador Negro");
+          setOpponentAvatar(data.player2Data.avatar || "⚫");
+        }
       }
-  
-// ✅ Mostrar nombre y avatar del oponente
-  if (playerColor === "red" && data.player2Data) {
-  setOpponentName(data.player2Data.name || "Jugador Negro");
-  setOpponentAvatar(data.player2Data.avatar || "🤖");
-}
-if (playerColor === "black" && data.player1Data) {
-  setOpponentName(data.player1Data.name || "Jugador Rojo");
-  setOpponentAvatar(data.player1Data.avatar || "🤖");
-}
 
-  }
+      // ✅ Mostrar nombre y avatar del oponente
+      if (playerColor === "black" && data.player1Data) {
+        setOpponentName(data.player1Data.name || "Jugador Rojo");
+        setOpponentAvatar(data.player1Data.avatar || "🔴");
+      }
+
+      // Si soy el jugador negro y me acabo de unir
+      if (playerColor === "black" && data.player2) {
+        setWaitingForOpponent(false);
+      }
+    }
   });
-
 
   return () => unsub();
 }, [joinedRoom, roomId, playerColor]);
 
-
+// Función para limpiar partidas antiguas (opcional)
+async function cleanupOldGames() {
+  const q = query(
+    collection(db, "games"),
+    where("createdAt", "<", new Date(Date.now() - 24 * 60 * 60 * 1000)) // 24 horas
+  );
+  
+  const snapshot = await getDocs(q);
+  snapshot.forEach(async (doc) => {
+    await deleteDoc(doc.ref);
+  });
+}
   // ======= LÓGICA DEL JUEGO =======
-  function canCapture(fromRow, fromCol, boardState) {
-    const piece = boardState[fromRow][fromCol];
-    if (!piece) return false;
+function canCapture(fromRow, fromCol, boardState) {
+  const piece = boardState[fromRow][fromCol];
+  if (!piece) return false;
 
-    const dirs = [
-      [1, 1],
-      [1, -1],
-      [-1, 1],
-      [-1, -1],
-    ];
+  const directions = [
+    [1, 1], [1, -1], [-1, 1], [-1, -1]
+  ];
 
-    for (const [dr, dc] of dirs) {
-      if (!piece.king && piece.color === "red" && dr > 0) continue;
-      if (!piece.king && piece.color === "black" && dr < 0) continue;
+  for (const [dr, dc] of directions) {
+    // ✅ PARA REINAS: verificar en toda la diagonal
+    if (piece.king) {
+      let currentRow = fromRow + dr;
+      let currentCol = fromCol + dc;
+      let foundOpponent = false;
 
-      const midRow = fromRow + dr;
-      const midCol = fromCol + dc;
-      const endRow = fromRow + 2 * dr;
-      const endCol = fromCol + 2 * dc;
-
-      if (
-        endRow >= 0 &&
-        endRow < BOARD_SIZE &&
-        endCol >= 0 &&
-        endCol < BOARD_SIZE
-      ) {
-        const middle = boardState[midRow][midCol];
-        const end = boardState[endRow][endCol];
-        if (middle && middle.color !== piece.color && !end) {
+      while (currentRow >= 0 && currentRow < BOARD_SIZE && 
+             currentCol >= 0 && currentCol < BOARD_SIZE) {
+        
+        const cell = boardState[currentRow][currentCol];
+        
+        if (cell) {
+          if (cell.color === piece.color) break; // Pieza propia, no puede saltar
+          if (cell.color !== piece.color) {
+            foundOpponent = true;
+            // Verificar si hay espacio después para aterrizar
+            const landRow = currentRow + dr;
+            const landCol = currentCol + dc;
+            
+            if (landRow >= 0 && landRow < BOARD_SIZE && 
+                landCol >= 0 && landCol < BOARD_SIZE &&
+                boardState[landRow][landCol] === null) {
+              return true;
+            }
+            break;
+          }
+        }
+        
+        currentRow += dr;
+        currentCol += dc;
+      }
+    }
+    // ✅ PARA FICHAS NORMALES
+    else {
+      const toRow = fromRow + 2 * dr;
+      const toCol = fromCol + 2 * dc;
+      
+      if (toRow >= 0 && toRow < BOARD_SIZE && toCol >= 0 && toCol < BOARD_SIZE) {
+        const midRow = fromRow + dr;
+        const midCol = fromCol + dc;
+        const jumped = boardState[midRow][midCol];
+        const destination = boardState[toRow][toCol];
+        
+        if (jumped && jumped.color !== piece.color && !destination) {
+          // Verificar dirección para fichas normales
+          if (piece.color === "red" && dr > 0) continue;
+          if (piece.color === "black" && dr < 0) continue;
           return true;
         }
       }
     }
-    return false;
   }
+  
+  return false;
+}
 
-  function isValidMove(fromRow, fromCol, toRow, toCol) {
-    const piece = board[fromRow][fromCol];
-    if (!piece) return false;
-    const target = board[toRow][toCol];
-    if (target) return false;
+function isValidMove(fromRow, fromCol, toRow, toCol) {
+  const piece = board[fromRow][fromCol];
+  if (!piece) return false;
+  
+  const target = board[toRow][toCol];
+  if (target) return false;
 
-    const rowDiff = toRow - fromRow;
-    const colDiff = toCol - fromCol;
-    const dir = piece.color === "red" ? -1 : 1;
+  const rowDiff = toRow - fromRow;
+  const colDiff = toCol - fromCol;
 
-    if (Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1 && !mustContinue) {
-      if (piece.king) return true;
-      return rowDiff === dir;
+  // ✅ MOVIMIENTOS PARA REINAS (pueden moverse cualquier distancia en diagonal)
+  if (piece.king) {
+    // Verificar que sea movimiento diagonal
+    if (Math.abs(rowDiff) !== Math.abs(colDiff)) return false;
+    
+    const rowStep = rowDiff > 0 ? 1 : -1;
+    const colStep = colDiff > 0 ? 1 : -1;
+    
+    let currentRow = fromRow + rowStep;
+    let currentCol = fromCol + colStep;
+    let jumpedPiece = null;
+    let jumpPosition = null;
+
+    // Verificar el camino
+    while (currentRow !== toRow || currentCol !== toCol) {
+      const cell = board[currentRow][currentCol];
+      
+      if (cell) {
+        if (jumpedPiece) {
+          // Ya saltamos una pieza, no puede saltar más de una
+          return false;
+        }
+        if (cell.color === piece.color) {
+          // No puede saltar sobre sus propias piezas
+          return false;
+        }
+        // Es una pieza del oponente - marcamos que saltamos
+        jumpedPiece = cell;
+        jumpPosition = { row: currentRow, col: currentCol };
+      }
+      
+      currentRow += rowStep;
+      currentCol += colStep;
     }
 
+    // Si saltamos una pieza, es una captura válida
+    if (jumpedPiece) {
+      return true;
+    }
+    
+    // Si no saltamos, es un movimiento simple (solo si no debemos continuar capturando)
+    return !mustContinue;
+  }
+
+  // ✅ MOVIMIENTOS PARA FICHAS NORMALES (solo 1 o 2 casillas)
+  else {
+    // Movimiento simple (sin captura)
+    if (Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1 && !mustContinue) {
+      return piece.color === "red" ? rowDiff === -1 : rowDiff === 1;
+    }
+
+    // Movimiento de captura
     if (Math.abs(rowDiff) === 2 && Math.abs(colDiff) === 2) {
       const midRow = (fromRow + toRow) / 2;
       const midCol = (fromCol + toCol) / 2;
       const jumped = board[midRow][midCol];
+      
       if (jumped && jumped.color !== piece.color) {
-        if (piece.king) return true;
-        return rowDiff === 2 * dir;
+        return piece.color === "red" ? rowDiff === -2 : rowDiff === 2;
+      }
+    }
+  }
+
+  return false;
+}
+
+async function handleClick(row, col) {
+  if (!joinedRoom || winner) return;
+  if (turn !== playerColor) return;
+
+  const piece = board[row][col];
+  if (piece && piece.color === turn && !mustContinue) {
+    setSelected({ row, col });
+    return;
+  }
+
+  if (selected && isValidMove(selected.row, selected.col, row, col)) {
+    const newBoard = board.map((r) => [...r]);
+    const moving = { ...newBoard[selected.row][selected.col] };
+    newBoard[selected.row][selected.col] = null;
+
+    let didCapture = false;
+    let capturedPieces = [];
+
+    // ✅ CAPTURAS PARA REINAS (pueden saltar múltiples piezas)
+    if (moving.king) {
+      const rowDiff = row - selected.row;
+      const colDiff = col - selected.col;
+      
+      if (Math.abs(rowDiff) > 1) { // Si se mueve más de 1 casilla, es captura
+        const rowStep = rowDiff > 0 ? 1 : -1;
+        const colStep = colDiff > 0 ? 1 : -1;
+        
+        let currentRow = selected.row + rowStep;
+        let currentCol = selected.col + colStep;
+
+        // Buscar todas las piezas capturadas en el camino
+        while (currentRow !== row || currentCol !== col) {
+          const cell = board[currentRow][currentCol];
+          
+          if (cell && cell.color !== moving.color) {
+            // Agregar animación para esta pieza capturada
+            capturedPieces.push(`${currentRow}-${currentCol}`);
+            // Eliminar la pieza capturada
+            newBoard[currentRow][currentCol] = null;
+            didCapture = true;
+          }
+          
+          currentRow += rowStep;
+          currentCol += colStep;
+        }
+      }
+    }
+    // ✅ CAPTURAS PARA FICHAS NORMALES
+    else if (Math.abs(row - selected.row) === 2) {
+      const midRow = (row + selected.row) / 2;
+      const midCol = (col + selected.col) / 2;
+      
+      capturedPieces.push(`${midRow}-${midCol}`);
+      newBoard[midRow][midCol] = null;
+      didCapture = true;
+    }
+
+    // ✅ Aplicar animaciones de captura
+    if (capturedPieces.length > 0) {
+      setExplodingPieces((prev) => [...prev, ...capturedPieces]);
+    }
+
+    // ✅ Mover nuestra ficha a la nueva posición
+    newBoard[row][col] = moving;
+
+    // ✅ Convertir a rey si llega al final (solo para fichas normales)
+    if (!moving.king) {
+      if ((moving.color === "red" && row === 0) ||
+          (moving.color === "black" && row === BOARD_SIZE - 1)) {
+        moving.king = true;
+        newBoard[row][col] = moving;
       }
     }
 
-    return false;
-  }
+    // ✅ Contar fichas para ver si hay ganador
+    const redCount = newBoard.flat().filter((c) => c?.color === "red").length;
+    const blackCount = newBoard.flat().filter((c) => c?.color === "black").length;
 
-  async function handleClick(row, col) {
-    if (!joinedRoom || winner) return;
-    if (turn !== playerColor) return; // solo mueve tu color
+    let newWinner = null;
+    if (redCount === 0) newWinner = "⚫ ¡Gana negro!";
+    else if (blackCount === 0) newWinner = "🔴 ¡Gana rojo!";
 
-    const piece = board[row][col];
-    if (piece && piece.color === turn && !mustContinue) {
+    // ✅ Verificar si puede seguir capturando
+    if (didCapture && canCapture(row, col, newBoard)) {
+      setBoard(newBoard);
       setSelected({ row, col });
-      return;
+      setMustContinue(true);
+      
+      await updateDoc(doc(db, "games", roomId), {
+        board: JSON.stringify(newBoard),
+        turn: turn,
+        winner: newWinner,
+      });
+    } else {
+      setBoard(newBoard);
+      setSelected(null);
+      setMustContinue(false);
+      const nextTurn = turn === "red" ? "black" : "red";
+
+      await updateDoc(doc(db, "games", roomId), {
+        board: JSON.stringify(newBoard),
+        turn: nextTurn,
+        winner: newWinner,
+      });
     }
 
-    if (selected && isValidMove(selected.row, selected.col, row, col)) {
-      const newBoard = board.map((r) => [...r]);
-      const moving = { ...newBoard[selected.row][selected.col] };
-      newBoard[selected.row][selected.col] = null;
-
-      let didCapture = false;
-      if (Math.abs(row - selected.row) === 2) {
-  const midRow = (row + selected.row) / 2;
-  const midCol = (col + selected.col) / 2;
-
-  // 💥 Agregamos la animación antes de eliminarla
-  setExplodingPieces((prev) => [...prev, `${midRow}-${midCol}`]);
-
-  // Esperar que termine la animación (0.6s) antes de borrarla
-  // Eliminamos la ficha visualmente y en Firebase
-const updatedBoard = [...newBoard];
-updatedBoard[midRow][midCol] = null;
-setBoard(updatedBoard);
-
-// Actualizamos Firestore para que ambos jugadores lo vean
-await updateDoc(doc(db, "games", roomId), {
-  board: JSON.stringify(updatedBoard),
-});
-
-  didCapture = true;
-}
-
-
-      newBoard[row][col] = moving;
-
-     if (
-  (moving.color === "red" && row === 0) ||
-  (moving.color === "black" && row === BOARD_SIZE - 1)
-) {
-  moving.king = true;
-}
-
-// Después de marcarla como dama, la ponemos en el tablero
-newBoard[row][col] = moving;
-
-
-      const redCount = newBoard.flat().filter((c) => c?.color === "red").length;
-      const blackCount = newBoard
-        .flat()
-        .filter((c) => c?.color === "black").length;
-
-      let newWinner = null;
-      if (redCount === 0) newWinner = "⚫ ¡Gana negro!";
-      else if (blackCount === 0) newWinner = "🔴 ¡Gana rojo!";
-
-      if (didCapture && canCapture(row, col, newBoard)) {
-        setBoard(newBoard);
-        setSelected({ row, col });
-        setMustContinue(true);
-      } else {
-        setBoard(newBoard);
-        setSelected(null);
-        setMustContinue(false);
-        const nextTurn = turn === "red" ? "black" : "red";
-
-        // Guardar en Firestore
-        const roomRef = doc(db, "games", roomId);
-        await updateDoc(roomRef, {
-          board: JSON.stringify(newBoard), // ✅ lo guardamos como texto
-          turn: nextTurn,
-          winner: newWinner,
-        });
-      }
-    }
+    // ✅ Limpiar animaciones después de un tiempo
+    setTimeout(() => {
+      setExplodingPieces([]);
+    }, 600);
   }
+}
 
 
 
@@ -473,6 +627,32 @@ if (!userReady) {
     </div>
   );
 }
+
+
+// ✅ PANTALLA DE ESPERA MEJORADA:
+if (joinedRoom && waitingForOpponent) {
+  return (
+    <div className="waiting-screen">
+      <h2>⏳ Esperando oponente...</h2>
+      <div className="room-id-box">
+        <p>ID de la partida:</p>
+        <h3 className="room-id">{roomId}</h3>
+        <p>Comparte este ID con tu amigo</p>
+      </div>
+      <div className="player-info">
+        <div className="avatar-preview">
+          {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+            <img src={avatar} alt="avatar" className="avatar-img" />
+          ) : (
+            <span className="avatar">{avatar}</span>
+          )}
+        </div>
+        <p>{playerName} (Rojo)</p>
+      </div>
+    </div>
+  );
+}
+
 
 
 

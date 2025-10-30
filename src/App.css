@@ -1,0 +1,13 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #fafafa;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+.grid {
+  margin-top: 10px;
+}

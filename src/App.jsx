@@ -1,0 +1,312 @@
+import React from "react";
+import { useEffect, useState } from "react";
+import "./App.css";
+import { db } from "./firebaseConfig";
+import "./Board.css";
+
+import {
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
+
+const BOARD_SIZE = 8;
+
+function App() {
+  const [board, setBoard] = useState(initBoard());
+  const [selected, setSelected] = useState(null);
+  const [turn, setTurn] = useState("red");
+  const [mustContinue, setMustContinue] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [roomId, setRoomId] = useState("");
+  const [joinedRoom, setJoinedRoom] = useState(false);
+  const [playerColor, setPlayerColor] = useState(null);
+
+  function initBoard() {
+    const newBoard = Array(BOARD_SIZE)
+      .fill(null)
+      .map(() => Array(BOARD_SIZE).fill(null));
+
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        if ((row + col) % 2 === 1)
+          newBoard[row][col] = { color: "black", king: false };
+      }
+    }
+
+    for (let row = BOARD_SIZE - 3; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        if ((row + col) % 2 === 1)
+          newBoard[row][col] = { color: "red", king: false };
+      }
+    }
+
+    return newBoard;
+  }
+
+  // ======= FIREBASE =======
+  async function createRoom() {
+    const id = Math.random().toString(36).substring(2, 8);
+    const roomRef = doc(db, "games", id);
+
+    await setDoc(roomRef, {
+       board: JSON.stringify(initBoard()), // ✅ Convertimos a texto
+      turn: "red",
+      winner: null,
+    });
+
+    setRoomId(id);
+    setPlayerColor("red");
+    setJoinedRoom(true);
+    alert(`🎮 Sala creada: ${id}`);
+  }
+
+  async function joinRoom() {
+    const roomRef = doc(db, "games", roomId);
+    const snap = await getDoc(roomRef);
+    if (snap.exists()) {
+      setJoinedRoom(true);
+      setPlayerColor("black");
+      alert(`✅ Te uniste a la sala ${roomId}`);
+    } else {
+      alert("❌ Sala no encontrada");
+    }
+  }
+
+  // Escucha en tiempo real los cambios
+  useEffect(() => {
+    if (!joinedRoom || !roomId) return;
+    const unsub = onSnapshot(doc(db, "games", roomId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setBoard(JSON.parse(data.board)); // ✅ Convertimos de texto a matriz
+        setTurn(data.turn);
+        setWinner(data.winner);
+      }
+    });
+    return () => unsub();
+  }, [joinedRoom, roomId]);
+
+  // ======= LÓGICA DEL JUEGO =======
+  function canCapture(fromRow, fromCol, boardState) {
+    const piece = boardState[fromRow][fromCol];
+    if (!piece) return false;
+
+    const dirs = [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+
+    for (const [dr, dc] of dirs) {
+      if (!piece.king && piece.color === "red" && dr > 0) continue;
+      if (!piece.king && piece.color === "black" && dr < 0) continue;
+
+      const midRow = fromRow + dr;
+      const midCol = fromCol + dc;
+      const endRow = fromRow + 2 * dr;
+      const endCol = fromCol + 2 * dc;
+
+      if (
+        endRow >= 0 &&
+        endRow < BOARD_SIZE &&
+        endCol >= 0 &&
+        endCol < BOARD_SIZE
+      ) {
+        const middle = boardState[midRow][midCol];
+        const end = boardState[endRow][endCol];
+        if (middle && middle.color !== piece.color && !end) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function isValidMove(fromRow, fromCol, toRow, toCol) {
+    const piece = board[fromRow][fromCol];
+    if (!piece) return false;
+    const target = board[toRow][toCol];
+    if (target) return false;
+
+    const rowDiff = toRow - fromRow;
+    const colDiff = toCol - fromCol;
+    const dir = piece.color === "red" ? -1 : 1;
+
+    if (Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1 && !mustContinue) {
+      if (piece.king) return true;
+      return rowDiff === dir;
+    }
+
+    if (Math.abs(rowDiff) === 2 && Math.abs(colDiff) === 2) {
+      const midRow = (fromRow + toRow) / 2;
+      const midCol = (fromCol + toCol) / 2;
+      const jumped = board[midRow][midCol];
+      if (jumped && jumped.color !== piece.color) {
+        if (piece.king) return true;
+        return rowDiff === 2 * dir;
+      }
+    }
+
+    return false;
+  }
+
+  async function handleClick(row, col) {
+    if (!joinedRoom || winner) return;
+    if (turn !== playerColor) return; // solo mueve tu color
+
+    const piece = board[row][col];
+    if (piece && piece.color === turn && !mustContinue) {
+      setSelected({ row, col });
+      return;
+    }
+
+    if (selected && isValidMove(selected.row, selected.col, row, col)) {
+      const newBoard = board.map((r) => [...r]);
+      const moving = { ...newBoard[selected.row][selected.col] };
+      newBoard[selected.row][selected.col] = null;
+
+      let didCapture = false;
+      if (Math.abs(row - selected.row) === 2) {
+        const midRow = (row + selected.row) / 2;
+        const midCol = (col + selected.col) / 2;
+        newBoard[midRow][midCol] = null;
+        didCapture = true;
+      }
+
+      newBoard[row][col] = moving;
+
+      if (
+        (moving.color === "red" && row === 0) ||
+        (moving.color === "black" && row === BOARD_SIZE - 1)
+      ) {
+        moving.king = true;
+      }
+
+      const redCount = newBoard.flat().filter((c) => c?.color === "red").length;
+      const blackCount = newBoard
+        .flat()
+        .filter((c) => c?.color === "black").length;
+
+      let newWinner = null;
+      if (redCount === 0) newWinner = "⚫ ¡Gana negro!";
+      else if (blackCount === 0) newWinner = "🔴 ¡Gana rojo!";
+
+      if (didCapture && canCapture(row, col, newBoard)) {
+        setBoard(newBoard);
+        setSelected({ row, col });
+        setMustContinue(true);
+      } else {
+        setBoard(newBoard);
+        setSelected(null);
+        setMustContinue(false);
+        const nextTurn = turn === "red" ? "black" : "red";
+
+        // Guardar en Firestore
+        const roomRef = doc(db, "games", roomId);
+        await updateDoc(roomRef, {
+          board: JSON.stringify(newBoard), // ✅ lo guardamos como texto
+          turn: nextTurn,
+          winner: newWinner,
+        });
+      }
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center mt-4">
+      <h1>Damas Online 👑</h1>
+
+      {!joinedRoom ? (
+        <div style={{ marginBottom: "20px" }}>
+          <button onClick={createRoom} className="btn">
+            Crear sala 🎲
+          </button>
+          <div style={{ marginTop: "10px" }}>
+            <input
+              type="text"
+              placeholder="Código de sala"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              style={{ padding: "5px", marginRight: "5px" }}
+            />
+            <button onClick={joinRoom} className="btn">
+              Unirse
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p>
+            Sala: <b>{roomId}</b> | Eres:{" "}
+            {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
+          </p>
+          {winner ? (
+            <h2 style={{ color: "green" }}>{winner}</h2>
+          ) : (
+            <p>
+              Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
+              {mustContinue ? "– sigue capturando!" : ""}
+            </p>
+          )}
+        </>
+      )}
+
+     <div className="board">
+  {board.map((row, rIndex) =>
+    row.map((cell, cIndex) => {
+      const isDark = (rIndex + cIndex) % 2 === 1;
+      const isSelected =
+        selected &&
+        selected.row === rIndex &&
+        selected.col === cIndex;
+
+      return (
+        <div
+          key={`${rIndex}-${cIndex}`}
+          onClick={() => handleClick(rIndex, cIndex)}
+          className={`cell ${isDark ? "dark" : "light"} ${
+            isSelected ? "selected" : ""
+          }`}
+        >
+          {cell && (
+            <div
+              className={`piece ${cell.color} ${
+                cell.king ? "king" : ""
+              }`}
+            />
+          )}
+        </div>
+      );
+    })
+  )}
+</div>
+
+
+      <button
+  onClick={() => {
+    setBoard(initBoard());
+    setTurn("red");
+    setSelected(null);
+    setMustContinue(false);
+    setWinner(null);
+    if (roomId)
+      updateDoc(doc(db, "games", roomId), {
+        board: JSON.stringify(initBoard()),
+        turn: "red",
+        winner: null,
+      });
+  }}
+  className="reset-btn"
+>
+  Reiniciar
+</button>
+
+    </div>
+  );
+}
+
+export default App;

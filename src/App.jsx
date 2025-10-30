@@ -331,7 +331,7 @@ newBoard[row][col] = moving;
 if (!userReady) {
   return (
     <div className="welcome-screen">
-      <h2>¡Bienvenido a Damas Online 👑!</h2>
+      <h2>¡Bienvenido a Damas 👑!</h2>
 
       <input
         type="text"

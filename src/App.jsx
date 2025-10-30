@@ -49,6 +49,27 @@ const [avatar, setAvatar] = useState("😊");
 const [userReady, setUserReady] = useState(false);
 
 
+useEffect(() => {
+  const botonCamara = document.getElementById("abrir-camara");
+  if (!botonCamara) return;
+
+  botonCamara.addEventListener("click", async () => {
+    const contenedor = document.getElementById("contenedor-camara");
+    const video = document.getElementById("video-camara");
+    contenedor.style.display = "flex";
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    } catch (err) {
+      alert("No se pudo acceder a la cámara.");
+      contenedor.style.display = "none";
+    }
+  });
+
+  return () => botonCamara.removeEventListener("click", () => {});
+}, []);
+
 
 
 
@@ -265,7 +286,7 @@ if (!userReady) {
 
       <p>Elige tu foto de perfil:</p>
 <div className="avatar-options">
-  <button className="avatar-btn" onClick={() => document.getElementById("contenedor-camara").style.display = "flex"}>
+  <button id="abrir-camara" className="avatar-btn">
     📷 Usar Cámara
   </button>
   <label className="avatar-btn">

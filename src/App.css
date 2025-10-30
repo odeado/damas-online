@@ -266,6 +266,8 @@ h1 {
 }
 
 .versus-view.compact {
+  display: flex;
+  flex-wrap: wrap;
   background: #fdf1ff;
   border-radius: 16px;
   padding: 8px 10px;
@@ -321,4 +323,22 @@ h1 {
   font-size: 1rem;
 }
 
+/* ✨ Resalta el jugador activo */
+.player-card.active-turn .versus-avatar {
+  border: 3px solid #00e676; /* verde brillante */
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.8);
+  transform: scale(1.1);
+  transition: 0.3s;
+}
+
+.player-card.active-turn .player-name {
+  color: #00e676;
+  font-weight: bold;
+}
+
+/* 🔇 El jugador inactivo se ve más suave */
+.player-card:not(.active-turn) {
+  opacity: 0.7;
+  filter: grayscale(20%);
+}
 

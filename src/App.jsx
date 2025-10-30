@@ -525,9 +525,6 @@ if (!userReady) {
         <span className="versus-avatar small">{avatar}</span>
       )}
       <p className="player-name">{playerName || "Tú"}</p>
-      <p className="player-color">
-        {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
-      </p>
     </div>
 
     <div className="vs-center small">⚡ VS ⚡</div>

@@ -11,23 +11,6 @@ import { onSnapshot } from "firebase/firestore";
 
 const BOARD_SIZE = 8;
 
-function App() {
-  const [board, setBoard] = useState(initBoard());
-  const [selected, setSelected] = useState(null);
-  const [turn, setTurn] = useState("red");
-  const [mustContinue, setMustContinue] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [roomId, setRoomId] = useState("");
-  const [joinedRoom, setJoinedRoom] = useState(false);
-  const [playerColor, setPlayerColor] = useState(null);
-  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
-
-  const [playerName, setPlayerName] = useState("");
-const [avatar, setAvatar] = useState("😊");
-const [userReady, setUserReady] = useState(false);
-
-
-
   function initBoard() {
     const newBoard = Array(BOARD_SIZE)
       .fill(null)
@@ -49,6 +32,25 @@ const [userReady, setUserReady] = useState(false);
 
     return newBoard;
   }
+
+function App() {
+  const [board, setBoard] = useState(initBoard());
+  const [selected, setSelected] = useState(null);
+  const [turn, setTurn] = useState("red");
+  const [mustContinue, setMustContinue] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [roomId, setRoomId] = useState("");
+  const [joinedRoom, setJoinedRoom] = useState(false);
+  const [playerColor, setPlayerColor] = useState(null);
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+
+  const [playerName, setPlayerName] = useState("");
+const [avatar, setAvatar] = useState("😊");
+const [userReady, setUserReady] = useState(false);
+
+
+
+
 
   // ======= FIREBASE =======
   async function createRoom() {

@@ -428,14 +428,7 @@ if (!userReady) {
       <h1>Damas Online 👑</h1>
 
     {!joinedRoom ? (
-  <div className="menu">
-    <button onClick={createRoom} className="btn">
-      🎲 Nueva partida
-    </button>
-    <button onClick={joinRoom} className="btn">
-      🤝 Unirse a una partida
-    </button>
-  </div>
+  <p>Uniéndote a la partida...</p>
 ) : waitingForOpponent ? (
   <div className="waiting">
     <p>⏳ Esperando que se una un oponente...</p>

@@ -274,7 +274,7 @@ useEffect(() => {
 if (!userReady) {
   return (
     <div className="welcome-screen">
-      <h2>¡Bienvenida a Damas Online 👑!</h2>
+      <h2>¡Bienvenido a Damas Online 👑!</h2>
 
       <input
         type="text"
@@ -316,7 +316,6 @@ if (!userReady) {
               if (file) {
                 const url = URL.createObjectURL(file);
                 setAvatar(url);
-                if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
               }
             }}
             style={{ display: "none" }}
@@ -329,7 +328,6 @@ if (!userReady) {
             const emojis = ["😊", "😎", "🤩", "😺", "👻", "🤖", "🦊", "🐵"];
             const random = emojis[Math.floor(Math.random() * emojis.length)];
             setAvatar(random);
-            if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
           }}
         >
           😊 Usar Emoji
@@ -355,7 +353,6 @@ if (!userReady) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageUrl = canvas.toDataURL("image/png");
                 setAvatar(imageUrl);
-                if (playerName.trim()) setUserReady(true); // 👈 pasa al menú
                 document.getElementById("contenedor-camara").style.display = "none";
                 video.srcObject.getTracks().forEach((track) => track.stop());
               }}
@@ -383,6 +380,37 @@ if (!userReady) {
         ) : (
           <span className="avatar">{avatar}</span>
         )}
+      </div>
+
+      {/* 🎮 Botones del menú principal */}
+      <div className="menu" style={{ marginTop: "20px" }}>
+        <button
+          onClick={() => {
+            if (!playerName.trim()) {
+              alert("Ingresa tu nombre antes de continuar");
+              return;
+            }
+            createRoom();
+            setUserReady(true);
+          }}
+          className="btn"
+        >
+          🎲 Nueva partida
+        </button>
+
+        <button
+          onClick={() => {
+            if (!playerName.trim()) {
+              alert("Ingresa tu nombre antes de continuar");
+              return;
+            }
+            joinRoom();
+            setUserReady(true);
+          }}
+          className="btn"
+        >
+          🤝 Unirse a una partida
+        </button>
       </div>
     </div>
   );

@@ -107,39 +107,51 @@ useEffect(() => {
   alert(`✅ Partida creada con ID: ${id}. Esperando oponente...`);
 }
 
- // Unirse automáticamente a la primera sala disponible
+// Unirse automáticamente a la primera sala disponible
 async function joinRoom() {
-  // Traemos todas las partidas de la colección "games"
   const querySnapshot = await getDocs(collection(db, "games"));
-
   let found = false;
 
   for (const gameDoc of querySnapshot.docs) {
     const data = gameDoc.data();
-    // Ignoramos si ya tiene los dos jugadores o hay un ganador
+
+    // Si hay lugar disponible en la partida
     if (data.player1 && !data.player2 && !data.winner) {
+      // marcar jugador 2
       await updateDoc(doc(db, "games", gameDoc.id), { player2: true });
+
+      // guardar los datos del jugador 2 (nombre y avatar)
+      await updateDoc(doc(db, "games", gameDoc.id), {
+        player2Data: {
+          name: playerName,
+          avatar: avatar,
+        },
+      });
+
+      // configurar el estado local
       setRoomId(gameDoc.id);
       setPlayerColor("black");
       setJoinedRoom(true);
       alert(`✅ Te uniste a la partida ${gameDoc.id}`);
       found = true;
+
+      // 🔥 leer los datos del jugador 1 para mostrar su avatar inmediatamente
+      const docSnap = await getDoc(doc(db, "games", gameDoc.id));
+      if (docSnap.exists()) {
+        const roomData = docSnap.data();
+        setOpponentName(roomData.player1Data?.name || "Jugador Rojo");
+        setOpponentAvatar(roomData.player1Data?.avatar || "🤖");
+      }
+
       break;
     }
   }
-
-  await updateDoc(doc(db, "games", gameDoc.id), {
-  player2Data: {
-    name: playerName,
-    avatar: avatar,
-  },
-});
-
 
   if (!found) {
     alert("❌ No hay partidas disponibles. Crea una nueva.");
   }
 }
+
 
 
   // Escucha en tiempo real los cambios de la sala
@@ -487,18 +499,26 @@ if (!userReady) {
 {/* 🔥 Vista cara a cara compacta con turno arriba */}
 <div className="versus-view compact">
   <div className="turn-display">
-    {winner ? (
-      <span className="winner-text">{winner}</span>
-    ) : (
-      <span>
-        Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
-        {mustContinue ? "– sigue capturando!" : ""}
-      </span>
-    )}
-  </div>
+  {winner ? (
+    <span className="winner-text">{winner}</span>
+  ) : (
+    <span>
+      🎮 Turno de{" "}
+      {turn === playerColor
+        ? playerName || "Tú"
+        : opponentName || "Oponente"}{" "}
+      {mustContinue ? "– sigue capturando!" : ""}
+    </span>
+  )}
+</div>
+
 
   <div className="versus-row">
-    <div className="player-card small">
+    <div
+  className={`player-card small ${
+    turn === playerColor ? "active-turn" : ""
+  }`}
+>
       {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
         <img src={avatar} alt="tú" className="versus-avatar small" />
       ) : (
@@ -512,7 +532,11 @@ if (!userReady) {
 
     <div className="vs-center small">⚡ VS ⚡</div>
 
-    <div className="player-card small">
+    <div
+  className={`player-card small ${
+    turn !== playerColor ? "active-turn" : ""
+  }`}
+>
       {opponentAvatar.startsWith("blob:") ||
       opponentAvatar.startsWith("data:image") ? (
         <img

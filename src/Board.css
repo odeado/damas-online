@@ -114,3 +114,33 @@
     width: 94vw;
   }
 }
+
+/* 💥 Efecto de explosión cuando una ficha es comida */
+.piece.exploding {
+  position: relative;
+  animation: explode 0.6s ease-out forwards;
+  z-index: 10;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  }
+  30% {
+    transform: scale(1.4);
+    opacity: 0.8;
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.8),
+                0 0 40px rgba(255, 0, 0, 0.5);
+  }
+  70% {
+    transform: scale(0.8);
+    opacity: 0.5;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}

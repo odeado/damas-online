@@ -20,6 +20,8 @@ function App() {
   const [roomId, setRoomId] = useState("");
   const [joinedRoom, setJoinedRoom] = useState(false);
   const [playerColor, setPlayerColor] = useState(null);
+  const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+
 
   function initBoard() {
     const newBoard = Array(BOARD_SIZE)
@@ -59,7 +61,8 @@ function App() {
     setRoomId(id);
   setPlayerColor("red");
   setJoinedRoom(true);
-  alert(`🎮 Nueva partida creada. Esperando oponente...`);
+  setWaitingForOpponent(true);
+  alert(`✅ Partida creada con ID: ${id}. Esperando oponente...`);
 }
 
  // Unirse automáticamente a la primera sala disponible
@@ -89,19 +92,27 @@ async function joinRoom() {
 }
 
 
-  // Escucha en tiempo real los cambios
-  useEffect(() => {
-    if (!joinedRoom || !roomId) return;
-    const unsub = onSnapshot(doc(db, "games", roomId), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setBoard(JSON.parse(data.board)); // ✅ Convertimos de texto a matriz
-        setTurn(data.turn);
-        setWinner(data.winner);
+  // Escucha en tiempo real los cambios de la sala
+useEffect(() => {
+  if (!joinedRoom || !roomId) return;
+
+  const unsub = onSnapshot(doc(db, "games", roomId), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      setBoard(JSON.parse(data.board));
+      setTurn(data.turn);
+      setWinner(data.winner);
+
+      // 🔥 Nuevo: detectar si ya entró el jugador 2
+      if (playerColor === "red" && data.player2) {
+        setWaitingForOpponent(false);
       }
-    });
-    return () => unsub();
-  }, [joinedRoom, roomId]);
+    }
+  });
+
+  return () => unsub();
+}, [joinedRoom, roomId, playerColor]);
+
 
   // ======= LÓGICA DEL JUEGO =======
   function canCapture(fromRow, fromCol, boardState) {
@@ -243,6 +254,10 @@ async function joinRoom() {
       🤝 Unirse a una partida
     </button>
   </div>
+) : waitingForOpponent ? (
+  <div className="waiting">
+    <p>⏳ Esperando que se una un oponente...</p>
+  </div>
 ) : (
   <>
     <p>
@@ -259,6 +274,7 @@ async function joinRoom() {
     )}
   </>
 )}
+
 
 
      <div className="board">

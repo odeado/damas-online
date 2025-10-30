@@ -10,36 +10,7 @@ import { onSnapshot } from "firebase/firestore";
 
 import { query, where, limit } from "firebase/firestore";
 
-async function joinRoom() {
-  const q = query(
-    collection(db, "games"),
-    where("player1", "==", true),
-    where("player2", "==", false),
-    where("winner", "==", null),
-    limit(1)
-  );
 
-  const unsubscribe = onSnapshot(q, async (snapshot) => {
-    if (!snapshot.empty) {
-      const gameDoc = snapshot.docs[0];
-      const gameId = gameDoc.id;
-      const data = gameDoc.data();
-
-      await updateDoc(doc(db, "games", gameId), {
-        player2: true,
-        player2Data: { name: playerName, avatar },
-      });
-
-      setRoomId(gameId);
-      setPlayerColor("black");
-      setJoinedRoom(true);
-      alert(`✅ Te uniste a la partida ${gameId}`);
-      unsubscribe(); // dejamos de escuchar una vez que entramos
-    } else {
-      console.log("Esperando partida disponible...");
-    }
-  });
-}
 
 
 
@@ -142,7 +113,37 @@ useEffect(() => {
 }
 
 
+async function joinRoom() {
+  const q = query(
+    collection(db, "games"),
+    where("player1", "==", true),
+    where("player2", "==", false),
+    where("winner", "==", null),
+    limit(1)
+  );
 
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    if (!snapshot.empty) {
+      const gameDoc = snapshot.docs[0];
+      const gameId = gameDoc.id;
+      const data = gameDoc.data();
+
+      await updateDoc(doc(db, "games", gameId), {
+        player2: true,
+        player2Data: { name: playerName, avatar },
+      });
+
+      setRoomId(gameId);
+      setPlayerColor("black");
+      setJoinedRoom(true);
+      setUserReady(true);
+      alert(`✅ Te uniste a la partida ${gameId}`);
+      unsubscribe(); // dejamos de escuchar una vez que entramos
+    } else {
+      console.log("Esperando partida disponible...");
+    }
+  });
+}
 
 
   // Escucha en tiempo real los cambios de la sala
@@ -460,13 +461,14 @@ if (!userReady) {
       alert("Ingresa tu nombre antes de continuar");
       return;
     }
-    joinRoom(playerName, avatar, setRoomId, setPlayerColor, setJoinedRoom);
-    setUserReady(true);
+    joinRoom(); // ✅ ya no se pasan parámetros
+    
   }}
   className="btn"
 >
   🤝 Unirse a una partida
 </button>
+
       </div>
     </div>
   );

@@ -277,12 +277,17 @@ h1 {
 }
 
 .turn-display {
+  display: flex;
+  text-align: center;
+  flex-wrap: wrap;
   font-weight: bold;
   margin-bottom: 4px;
   color: #6a1b9a;
 }
 
 .versus-row {
+  flex-wrap: wrap;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: space-around;

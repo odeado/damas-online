@@ -358,13 +358,14 @@ if (!userReady) {
 
 
 
-     <div className="avatar-preview">
-  {avatar.startsWith("blob:") ? (
+<div className="avatar-preview">
+  {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
     <img src={avatar} alt="avatar" className="avatar-img" />
   ) : (
     <span className="avatar">{avatar}</span>
   )}
 </div>
+
 
 
       <button

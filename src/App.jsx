@@ -400,11 +400,16 @@ if (!userReady) {
   </div>
 ) : (
   <>
-   <div className="player-info">
-  <span className="avatar">{avatar}</span>
+<div className="player-info">
+  {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+    <img src={avatar} alt="avatar" className="avatar-img" />
+  ) : (
+    <span className="avatar">{avatar}</span>
+  )}
   <span className="player-name">{playerName}</span>
   <span> | Eres: {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</span>
 </div>
+
 
     {winner ? (
       <h2 style={{ color: "green" }}>{winner}</h2>

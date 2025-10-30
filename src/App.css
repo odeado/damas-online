@@ -59,8 +59,25 @@ h1 {
 }
 
 .avatar-preview {
-  margin: 1rem 0;
-  font-size: 2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* Para el emoji o ícono simple */
+.avatar {
+  font-size: 2rem;
+}
+
+/* Para las fotos */
+.avatar-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%; /* 🔵 Hace la pelotita redonda */
+  object-fit: cover; /* ✅ Evita deformación */
+  border: 3px solid #facc15; /* 🌟 borde dorado estilo resplandor */
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.6); /* brillo suave */
 }
 
 .btn-start {

@@ -277,11 +277,15 @@ if (playerColor === "black" && data.player1Data) {
   setExplodingPieces((prev) => [...prev, `${midRow}-${midCol}`]);
 
   // Esperar que termine la animación (0.6s) antes de borrarla
-  setTimeout(() => {
-    const updatedBoard = [...newBoard];
-    updatedBoard[midRow][midCol] = null;
-    setBoard(updatedBoard);
-  }, 600);
+  // Eliminamos la ficha visualmente y en Firebase
+const updatedBoard = [...newBoard];
+updatedBoard[midRow][midCol] = null;
+setBoard(updatedBoard);
+
+// Actualizamos Firestore para que ambos jugadores lo vean
+await updateDoc(doc(db, "games", roomId), {
+  board: JSON.stringify(updatedBoard),
+});
 
   didCapture = true;
 }
@@ -289,12 +293,16 @@ if (playerColor === "black" && data.player1Data) {
 
       newBoard[row][col] = moving;
 
-      if (
-        (moving.color === "red" && row === 0) ||
-        (moving.color === "black" && row === BOARD_SIZE - 1)
-      ) {
-        moving.king = true;
-      }
+     if (
+  (moving.color === "red" && row === 0) ||
+  (moving.color === "black" && row === BOARD_SIZE - 1)
+) {
+  moving.king = true;
+}
+
+// Después de marcarla como dama, la ponemos en el tablero
+newBoard[row][col] = moving;
+
 
       const redCount = newBoard.flat().filter((c) => c?.color === "red").length;
       const blackCount = newBoard

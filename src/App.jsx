@@ -8,6 +8,40 @@ import { collection, getDocs, updateDoc } from "firebase/firestore";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onSnapshot } from "firebase/firestore";
 
+import { query, where, limit } from "firebase/firestore";
+
+async function joinRoom() {
+  const q = query(
+    collection(db, "games"),
+    where("player1", "==", true),
+    where("player2", "==", false),
+    where("winner", "==", null),
+    limit(1)
+  );
+
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    if (!snapshot.empty) {
+      const gameDoc = snapshot.docs[0];
+      const gameId = gameDoc.id;
+      const data = gameDoc.data();
+
+      await updateDoc(doc(db, "games", gameId), {
+        player2: true,
+        player2Data: { name: playerName, avatar },
+      });
+
+      setRoomId(gameId);
+      setPlayerColor("black");
+      setJoinedRoom(true);
+      alert(`✅ Te uniste a la partida ${gameId}`);
+      unsubscribe(); // dejamos de escuchar una vez que entramos
+    } else {
+      console.log("Esperando partida disponible...");
+    }
+  });
+}
+
+
 
 const BOARD_SIZE = 8;
 
@@ -107,50 +141,7 @@ useEffect(() => {
   alert(`✅ Partida creada con ID: ${id}. Esperando oponente...`);
 }
 
-// Unirse automáticamente a la primera sala disponible
-async function joinRoom() {
-  const querySnapshot = await getDocs(collection(db, "games"));
-  let found = false;
 
-  for (const gameDoc of querySnapshot.docs) {
-    const data = gameDoc.data();
-
-    // Si hay lugar disponible en la partida
-    if (data.player1 && !data.player2 && !data.winner) {
-      // marcar jugador 2
-      await updateDoc(doc(db, "games", gameDoc.id), { player2: true });
-
-      // guardar los datos del jugador 2 (nombre y avatar)
-      await updateDoc(doc(db, "games", gameDoc.id), {
-        player2Data: {
-          name: playerName,
-          avatar: avatar,
-        },
-      });
-
-      // configurar el estado local
-      setRoomId(gameDoc.id);
-      setPlayerColor("black");
-      setJoinedRoom(true);
-      alert(`✅ Te uniste a la partida ${gameDoc.id}`);
-      found = true;
-
-      // 🔥 leer los datos del jugador 1 para mostrar su avatar inmediatamente
-      const docSnap = await getDoc(doc(db, "games", gameDoc.id));
-      if (docSnap.exists()) {
-        const roomData = docSnap.data();
-        setOpponentName(roomData.player1Data?.name || "Jugador Rojo");
-        setOpponentAvatar(roomData.player1Data?.avatar || "🤖");
-      }
-
-      break;
-    }
-  }
-
-  if (!found) {
-    alert("❌ No hay partidas disponibles. Crea una nueva.");
-  }
-}
 
 
 
@@ -463,19 +454,19 @@ if (!userReady) {
           🎲 Nueva partida
         </button>
 
-        <button
-          onClick={() => {
-            if (!playerName.trim()) {
-              alert("Ingresa tu nombre antes de continuar");
-              return;
-            }
-            joinRoom();
-            setUserReady(true);
-          }}
-          className="btn"
-        >
-          🤝 Unirse a una partida
-        </button>
+       <button
+  onClick={() => {
+    if (!playerName.trim()) {
+      alert("Ingresa tu nombre antes de continuar");
+      return;
+    }
+    joinRoom(playerName, avatar, setRoomId, setPlayerColor, setJoinedRoom);
+    setUserReady(true);
+  }}
+  className="btn"
+>
+  🤝 Unirse a una partida
+</button>
       </div>
     </div>
   );

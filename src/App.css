@@ -267,6 +267,8 @@ h1 {
 
 .versus-view.compact {
   display: flex;
+  justify-content: space-around;
+  align-items: center;
   flex-wrap: wrap;
   background: #fdf1ff;
   border-radius: 16px;

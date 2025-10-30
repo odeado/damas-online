@@ -4,8 +4,8 @@ import "./App.css";
 import { db } from "./firebaseConfig";
 import "./Board.css";
 
-import { collection, getDocs, updateDoc } from "firebase/firestore";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+
 
 
 const BOARD_SIZE = 8;

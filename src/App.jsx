@@ -480,75 +480,57 @@ if (!userReady) {
   </div>
 ) : (
   <>
-<div className="players-bar">
-  {/* Jugador local */}
-  <div className="player-side left">
-    {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
-      <img src={avatar} alt="avatar" className="avatar-img" />
-    ) : (
-      <span className="avatar">{avatar}</span>
-    )}
-    <div className="player-label">
-      <strong>{playerName || "Tú"}</strong>
-      <span>{playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</span>
-    </div>
-  </div>
-
-  {/* Turno en el centro */}
-  <div className="turn-indicator">
-    {winner ? (
-      <h3 style={{ color: "green" }}>{winner}</h3>
-    ) : (
-      <p>
-        Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
-        {mustContinue ? "– sigue capturando!" : ""}
-      </p>
-    )}
-  </div>
-
-  {/* Jugador oponente */}
-  <div className="player-side right">
-    {opponentAvatar.startsWith("blob:") || opponentAvatar.startsWith("data:image") ? (
-      <img src={opponentAvatar} alt="oponente" className="avatar-img" />
-    ) : (
-      <span className="avatar">{opponentAvatar}</span>
-    )}
-    <div className="player-label">
-      <strong>{opponentName || "Esperando..."}</strong>
-      <span>{playerColor === "red" ? "⚫ Negro" : "🔴 Rojo"}</span>
-    </div>
-  </div>
-</div>
-{winner && (<div className="winner-banner">
-  <h2>{winner}</h2>
-</div>)}
+    {/* 🔥 Vista cara a cara grande */}
   </>
 )}
 
-{/* 🔥 Vista cara a cara */}
-<div className="versus-view">
-  <div className="player-card">
-    {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
-      <img src={avatar} alt="tú" className="versus-avatar" />
+{/* 🔥 Vista cara a cara compacta con turno arriba */}
+<div className="versus-view compact">
+  <div className="turn-display">
+    {winner ? (
+      <span className="winner-text">{winner}</span>
     ) : (
-      <span className="versus-avatar">{avatar}</span>
+      <span>
+        Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
+        {mustContinue ? "– sigue capturando!" : ""}
+      </span>
     )}
-    <p className="player-name">{playerName || "Tú"}</p>
-    <p className="player-color">{playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</p>
   </div>
 
-  <div className="vs-center">⚡ VS ⚡</div>
+  <div className="versus-row">
+    <div className="player-card small">
+      {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+        <img src={avatar} alt="tú" className="versus-avatar small" />
+      ) : (
+        <span className="versus-avatar small">{avatar}</span>
+      )}
+      <p className="player-name">{playerName || "Tú"}</p>
+      <p className="player-color">
+        {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
+      </p>
+    </div>
 
-  <div className="player-card">
-    {opponentAvatar.startsWith("blob:") || opponentAvatar.startsWith("data:image") ? (
-      <img src={opponentAvatar} alt="oponente" className="versus-avatar" />
-    ) : (
-      <span className="versus-avatar">{opponentAvatar}</span>
-    )}
-    <p className="player-name">{opponentName || "Esperando..."}</p>
-    <p className="player-color">{playerColor === "red" ? "⚫ Negro" : "🔴 Rojo"}</p>
+    <div className="vs-center small">⚡ VS ⚡</div>
+
+    <div className="player-card small">
+      {opponentAvatar.startsWith("blob:") ||
+      opponentAvatar.startsWith("data:image") ? (
+        <img
+          src={opponentAvatar}
+          alt="oponente"
+          className="versus-avatar small"
+        />
+      ) : (
+        <span className="versus-avatar small">{opponentAvatar}</span>
+      )}
+      <p className="player-name">{opponentName || "Esperando..."}</p>
+      <p className="player-color">
+        {playerColor === "red" ? "⚫ Negro" : "🔴 Rojo"}
+      </p>
+    </div>
   </div>
 </div>
+
 
 
      <div className="board">

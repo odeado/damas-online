@@ -47,6 +47,12 @@ function App() {
   const [playerName, setPlayerName] = useState("");
 const [avatar, setAvatar] = useState("😊");
 const [userReady, setUserReady] = useState(false);
+const [opponentName, setOpponentName] = useState("");
+const [opponentAvatar, setOpponentAvatar] = useState("🤖");
+
+
+const [explodingPieces, setExplodingPieces] = useState([]);
+
 
 
 useEffect(() => {
@@ -86,6 +92,14 @@ useEffect(() => {
     player2: false,
   });
 
+  await updateDoc(roomRef, {
+  player1Data: {
+    name: playerName,
+    avatar: avatar,
+  },
+});
+
+
     setRoomId(id);
   setPlayerColor("red");
   setJoinedRoom(true);
@@ -114,6 +128,14 @@ async function joinRoom() {
     }
   }
 
+  await updateDoc(doc(db, "games", gameDoc.id), {
+  player2Data: {
+    name: playerName,
+    avatar: avatar,
+  },
+});
+
+
   if (!found) {
     alert("❌ No hay partidas disponibles. Crea una nueva.");
   }
@@ -135,8 +157,20 @@ useEffect(() => {
       if (playerColor === "red" && data.player2) {
         setWaitingForOpponent(false);
       }
-    }
+  
+// ✅ Mostrar nombre y avatar del oponente
+  if (playerColor === "red" && data.player2Data) {
+  setOpponentName(data.player2Data.name || "Jugador Negro");
+  setOpponentAvatar(data.player2Data.avatar || "🤖");
+}
+if (playerColor === "black" && data.player1Data) {
+  setOpponentName(data.player1Data.name || "Jugador Rojo");
+  setOpponentAvatar(data.player1Data.avatar || "🤖");
+}
+
+  }
   });
+
 
   return () => unsub();
 }, [joinedRoom, roomId, playerColor]);
@@ -224,11 +258,22 @@ useEffect(() => {
 
       let didCapture = false;
       if (Math.abs(row - selected.row) === 2) {
-        const midRow = (row + selected.row) / 2;
-        const midCol = (col + selected.col) / 2;
-        newBoard[midRow][midCol] = null;
-        didCapture = true;
-      }
+  const midRow = (row + selected.row) / 2;
+  const midCol = (col + selected.col) / 2;
+
+  // 💥 Agregamos la animación antes de eliminarla
+  setExplodingPieces((prev) => [...prev, `${midRow}-${midCol}`]);
+
+  // Esperar que termine la animación (0.6s) antes de borrarla
+  setTimeout(() => {
+    const updatedBoard = [...newBoard];
+    updatedBoard[midRow][midCol] = null;
+    setBoard(updatedBoard);
+  }, 600);
+
+  didCapture = true;
+}
+
 
       newBoard[row][col] = moving;
 
@@ -435,28 +480,75 @@ if (!userReady) {
   </div>
 ) : (
   <>
-<div className="player-info">
-  {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
-    <img src={avatar} alt="avatar" className="avatar-img" />
-  ) : (
-    <span className="avatar">{avatar}</span>
-  )}
-  <span className="player-name">{playerName}</span>
-  <span> | Eres: {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</span>
-</div>
+<div className="players-bar">
+  {/* Jugador local */}
+  <div className="player-side left">
+    {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+      <img src={avatar} alt="avatar" className="avatar-img" />
+    ) : (
+      <span className="avatar">{avatar}</span>
+    )}
+    <div className="player-label">
+      <strong>{playerName || "Tú"}</strong>
+      <span>{playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</span>
+    </div>
+  </div>
 
-
+  {/* Turno en el centro */}
+  <div className="turn-indicator">
     {winner ? (
-      <h2 style={{ color: "green" }}>{winner}</h2>
+      <h3 style={{ color: "green" }}>{winner}</h3>
     ) : (
       <p>
         Turno: {turn === "red" ? "🔴 Rojo" : "⚫ Negro"}{" "}
         {mustContinue ? "– sigue capturando!" : ""}
       </p>
     )}
+  </div>
+
+  {/* Jugador oponente */}
+  <div className="player-side right">
+    {opponentAvatar.startsWith("blob:") || opponentAvatar.startsWith("data:image") ? (
+      <img src={opponentAvatar} alt="oponente" className="avatar-img" />
+    ) : (
+      <span className="avatar">{opponentAvatar}</span>
+    )}
+    <div className="player-label">
+      <strong>{opponentName || "Esperando..."}</strong>
+      <span>{playerColor === "red" ? "⚫ Negro" : "🔴 Rojo"}</span>
+    </div>
+  </div>
+</div>
+{winner && (<div className="winner-banner">
+  <h2>{winner}</h2>
+</div>)}
   </>
 )}
 
+{/* 🔥 Vista cara a cara */}
+<div className="versus-view">
+  <div className="player-card">
+    {avatar.startsWith("blob:") || avatar.startsWith("data:image") ? (
+      <img src={avatar} alt="tú" className="versus-avatar" />
+    ) : (
+      <span className="versus-avatar">{avatar}</span>
+    )}
+    <p className="player-name">{playerName || "Tú"}</p>
+    <p className="player-color">{playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</p>
+  </div>
+
+  <div className="vs-center">⚡ VS ⚡</div>
+
+  <div className="player-card">
+    {opponentAvatar.startsWith("blob:") || opponentAvatar.startsWith("data:image") ? (
+      <img src={opponentAvatar} alt="oponente" className="versus-avatar" />
+    ) : (
+      <span className="versus-avatar">{opponentAvatar}</span>
+    )}
+    <p className="player-name">{opponentName || "Esperando..."}</p>
+    <p className="player-color">{playerColor === "red" ? "⚫ Negro" : "🔴 Rojo"}</p>
+  </div>
+</div>
 
 
      <div className="board">
@@ -477,12 +569,13 @@ if (!userReady) {
           }`}
         >
           {cell && (
-            <div
-              className={`piece ${cell.color} ${
-                cell.king ? "king" : ""
-              }`}
-            />
-          )}
+  <div
+    className={`piece ${cell.color} ${cell.king ? "king" : ""} ${
+      explodingPieces.includes(`${rIndex}-${cIndex}`) ? "exploding" : ""
+    }`}
+  />
+)}
+
         </div>
       );
     })

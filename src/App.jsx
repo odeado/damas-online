@@ -22,6 +22,11 @@ function App() {
   const [playerColor, setPlayerColor] = useState(null);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
 
+  const [playerName, setPlayerName] = useState("");
+const [avatar, setAvatar] = useState("😊");
+const [userReady, setUserReady] = useState(false);
+
+
 
   function initBoard() {
     const newBoard = Array(BOARD_SIZE)
@@ -241,6 +246,45 @@ useEffect(() => {
     }
   }
 
+
+
+if (!userReady) {
+  return (
+    <div className="welcome-screen">
+      <h2>¡Bienvenida a Damas Online 👑!</h2>
+
+      <input
+        type="text"
+        placeholder="Tu nombre"
+        value={playerName}
+        onChange={(e) => setPlayerName(e.target.value)}
+        className="input-name"
+      />
+
+      <p>Elige tu foto de perfil:</p>
+      <div className="avatar-options">
+        <button className="avatar-btn" onClick={() => setAvatar("📷")}>Usar Cámara</button>
+        <button className="avatar-btn" onClick={() => setAvatar("🖼️")}>Subir Imagen</button>
+        <button className="avatar-btn" onClick={() => setAvatar("😊")}>Usar Emoji</button>
+      </div>
+
+      <div className="avatar-preview">
+        <span className="avatar">{avatar}</span>
+      </div>
+
+      <button
+        disabled={!playerName}
+        onClick={() => setUserReady(true)}
+        className="btn-start"
+      >
+        Continuar 💖
+      </button>
+    </div>
+  );
+}
+
+
+
   return (
     <div className="flex flex-col items-center mt-4">
       <h1>Damas Online 👑</h1>
@@ -260,10 +304,12 @@ useEffect(() => {
   </div>
 ) : (
   <>
-    <p>
-      Sala: <b>{roomId}</b> | Eres:{" "}
-      {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}
-    </p>
+   <div className="player-info">
+  <span className="avatar">{avatar}</span>
+  <span className="player-name">{playerName}</span>
+  <span> | Eres: {playerColor === "red" ? "🔴 Rojo" : "⚫ Negro"}</span>
+</div>
+
     {winner ? (
       <h2 style={{ color: "green" }}>{winner}</h2>
     ) : (

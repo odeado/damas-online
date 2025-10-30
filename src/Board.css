@@ -40,11 +40,11 @@
 }
 
 .cell.light {
-  background-color: #f0d9b5;
+  background-color: #e2dcd1;
 }
 
 .cell.dark {
-  background-color: #654321;
+  background-color: #cfa0d3;
   cursor: pointer;
 }
 
@@ -62,11 +62,11 @@
 }
 
 .piece.red {
-  background-color: red;
+  background-color: rgb(225, 0, 255);
 }
 
 .piece.black {
-  background-color: black;
+  background-color: rgb(241, 228, 228);
 }
 
 .piece.king {
@@ -86,7 +86,7 @@
 }
 
 .reset-btn:hover {
-  background: #555;
+  background: #d627cd;
 }
 
 /* 📱 Ajuste adicional para móviles pequeños */

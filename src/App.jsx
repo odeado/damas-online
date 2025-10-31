@@ -4,7 +4,7 @@ import "./App.css";
 import { db } from "./firebaseConfig";
 import "./Board.css";
 
-import { collection, getDocs, updateDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onSnapshot } from "firebase/firestore";
 
@@ -81,11 +81,61 @@ useEffect(() => {
   return () => botonCamara.removeEventListener("click", () => {});
 }, []);
 
+  // ======= LIMPIEZA AUTOMÁTICA =======
+  useEffect(() => {
+    // Limpiar partidas antiguas al iniciar la app
+    cleanupOldGames();
+    
+    // Y cada hora por si acaso
+    const interval = setInterval(cleanupOldGames, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
+  async function cleanupOldGames() {
+    try {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 horas
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hora para partidas vacías
+      
+      const q = query(
+        collection(db, "games"),
+        where("createdAt", "<", oneDayAgo)
+      );
+
+      const snapshot = await getDocs(q);
+      let deletedCount = 0;
+      
+      const deletePromises = snapshot.docs.map(async (docSnapshot) => {
+        const data = docSnapshot.data();
+        
+        // Eliminar si:
+        // 1. Tiene más de 24 horas
+        // 2. O si no tiene jugador 2 después de 1 hora
+        // 3. O si el juego ya terminó (hay ganador)
+        if ((data.createdAt && data.createdAt.toDate() < oneDayAgo) ||
+            (!data.player2 && data.createdAt && data.createdAt.toDate() < oneHourAgo) ||
+            data.winner) {
+          await deleteDoc(docSnapshot.ref);
+          deletedCount++;
+        }
+      });
+      
+      await Promise.all(deletePromises);
+      
+      if (deletedCount > 0) {
+        console.log(`🧹 Limpiadas ${deletedCount} partidas antiguas`);
+      }
+    } catch (error) {
+      console.error("Error limpiando partidas:", error);
+    }
+  }
 
 
   // ======= FIREBASE =======
  async function createRoom() {
+
+     // Limpiar partidas antiguas antes de crear nueva
+  await cleanupOldGames();
+
   const id = Math.random().toString(36).substring(2, 8).toUpperCase();
   const roomRef = doc(db, "games", id);
 
@@ -213,18 +263,7 @@ useEffect(() => {
   return () => unsub();
 }, [joinedRoom, roomId, playerColor]);
 
-// Función para limpiar partidas antiguas (opcional)
-async function cleanupOldGames() {
-  const q = query(
-    collection(db, "games"),
-    where("createdAt", "<", new Date(Date.now() - 24 * 60 * 60 * 1000)) // 24 horas
-  );
-  
-  const snapshot = await getDocs(q);
-  snapshot.forEach(async (doc) => {
-    await deleteDoc(doc.ref);
-  });
-}
+
   // ======= LÓGICA DEL JUEGO =======
 function canCapture(fromRow, fromCol, boardState) {
   const piece = boardState[fromRow][fromCol];
@@ -471,14 +510,23 @@ async function handleClick(row, col) {
         turn: nextTurn,
         winner: newWinner,
       });
-    }
 
-    // ✅ Limpiar animaciones después de un tiempo
+
+        // Si hay ganador, programar limpieza en 5 minutos
+  if (newWinner) {
+    setTimeout(() => {
+      cleanupOldGames();
+    }, 5 * 60 * 1000); // 5 minutos después de terminar
+
+    }
+    }
+  
+   // ✅ Limpiar animaciones después de un tiempo
     setTimeout(() => {
       setExplodingPieces([]);
     }, 600);
-  }
-}
+  } 
+} 
 
 
 

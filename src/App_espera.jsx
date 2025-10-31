@@ -662,7 +662,7 @@ if (joinedRoom && waitingForOpponent) {
 
 
   return (
-    <div className="container-center">
+    <div className="flex flex-col items-center mt-4">
       <h1>Damas Online 👑</h1>
 
     {!joinedRoom ? (

@@ -26,6 +26,8 @@
   width: min(90vw, 480px); /* ocupa 90% del ancho o máx 480px */
   border: 4px solid #333;
   margin-top: 10px;
+  margin-left: 5px;
+  margin-right: 5px;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -80,8 +82,8 @@
 }
 
 .piece.black {
-  background: linear-gradient(145deg, #d0db2d, #352a33);
-  box-shadow: inset -2px -2px 5px rgba(255,255,255,0.3),
+  background: linear-gradient(145deg, #efc10a, #a5914a);
+  box-shadow: inset -2px -2px 5px rgba(193, 228, 41, 0.3),
               inset 2px 2px 5px rgba(0,0,0,0.3),
               0 0 10px rgba(255,255,255,0.5);
   border: 1px solid #444;
@@ -111,7 +113,7 @@
 /* 📱 Ajuste adicional para móviles pequeños */
 @media (max-width: 700px) {
   .board {
-    width: 94vw;
+    width: 90vw;
   }
 }
 

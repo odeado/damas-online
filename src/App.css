@@ -1,17 +1,84 @@
+/* PANTALLA COMPLETA - ELIMINA BARRAS DEL NAVEGADOR */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed; /* ← Esto elimina el scroll completamente */
+}
+
 body {
   font-family: Arial, sans-serif;
   background-color: #53354f;
   text-align: center;
   color: #fff;
+  -webkit-overflow-scrolling: touch;
 }
 
-h1 {
-  margin-bottom: 10px;
+
+
+.container-center {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 5px;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.grid {
-  margin-top: 10px;
+/* Asegura que nada se salga de la pantalla */
+.welcome-screen, .waiting-screen {
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 15px;
 }
+
+/* Para cuando se instale como PWA */
+@media all and (display-mode: fullscreen) {
+  body {
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+/* Estilos específicos para móvil en modo pantalla completa */
+@media (max-width: 768px) {
+  body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+  
+  .container-center {
+    height: 100%;
+    padding: 5px;
+  }
+  
+  .board {
+    grid-template-columns: repeat(8, 11vw) !important;
+    grid-template-rows: repeat(8, 11vw) !important;
+    margin: 2px auto;
+  }
+  
+  .cell {
+    width: 11vw;
+    height: 11vw;
+  }
+  
+  .piece {
+    width: 9vw;
+    height: 9vw;
+  }
+}
+
 
 
 /* 🌸 Pantalla de bienvenida */
